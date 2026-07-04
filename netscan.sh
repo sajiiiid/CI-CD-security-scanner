@@ -44,6 +44,92 @@ scan_ports() {
     echo ""
 }
 
+# Check SSL/TLS certificate expiry using openssl
+scan_ssl() {
+    local target="$1"
+    echo "=== SSL/TLS Certificate Check ==="
+    echo "Target: ${target}:443"
+    echo ""
+
+    local expiry_str
+    expiry_str=$(openssl s_client -connect "${target}:443" -servername "$target" \
+        </dev/null 2>/dev/null \
+        | openssl x509 -noout -enddate 2>/dev/null \
+        | cut -d= -f2)
+
+    if [[ -z "$expiry_str" ]]; then
+        echo "Error: Could not retrieve SSL certificate"
+        echo ""
+        return 1
+    fi
+
+    local expiry_epoch now_epoch days_left
+    expiry_epoch=$(date -d "$expiry_str" +%s)
+    now_epoch=$(date +%s)
+    days_left=$(( (expiry_epoch - now_epoch) / 86400 ))
+
+    echo "Certificate expires: ${expiry_str}"
+    echo "Days remaining: ${days_left}"
+
+    if [[ $days_left -lt 0 ]]; then
+        echo "Status: EXPIRED"
+    elif [[ $days_left -lt 30 ]]; then
+        echo "Status: WARNING (expires within 30 days)"
+    else
+        echo "Status: OK"
+    fi
+    echo ""
+}
+
+# Inspect HTTP security headers using curl
+scan_headers() {
+    local target="$1"
+    echo "=== HTTP Security Headers ==="
+    echo "Target: https://${target}"
+    echo ""
+
+    local headers
+    headers=$(curl -sI -m 10 "https://${target}" 2>/dev/null) || {
+        echo "Error: Could not connect to https://${target}"
+        echo ""
+        return 1
+    }
+
+    local -a check_headers=("Strict-Transport-Security" "X-Frame-Options" "X-Content-Type-Options" "Content-Security-Policy")
+
+    for header in "${check_headers[@]}"; do
+        if echo "$headers" | grep -qi "^${header}:"; then
+            local value
+            value=$(echo "$headers" | grep -i "^${header}:" | head -1 | cut -d: -f2- | xargs)
+            echo "[PASS] ${header}: ${value}"
+        else
+            echo "[MISSING] ${header}"
+        fi
+    done
+    echo ""
+}
+
+# Look up DNS records using the host command
+scan_dns() {
+    local target="$1"
+    echo "=== DNS Records ==="
+    echo "Target: ${target}"
+    echo ""
+
+    echo "-- A Records --"
+    # We pipe standard output through grep -v to filter out ;; warnings
+    host -t A "$target" 2>/dev/null | grep -v "^;;" || echo "No A records found"
+    echo ""
+
+    echo "-- MX Records --"
+    host -t MX "$target" 2>/dev/null | grep -v "^;;" || echo "No MX records found"
+    echo ""
+
+    echo "-- NS Records --"
+    host -t NS "$target" 2>/dev/null | grep -v "^;;" || echo "No NS records found"
+    echo ""
+}
+
 # Entry point: parse arguments and dispatch to scan functions
 main() {
     local target=""
