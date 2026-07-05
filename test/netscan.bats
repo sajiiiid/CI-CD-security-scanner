@@ -1,5 +1,4 @@
 #!/usr/bin/env bats
-
 TEST_DOMAIN="example.com"
 
 setup() {
