@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+# Fail fast on errors and undefined variables.
 set -euo pipefail
 
+# Script version.
 VERSION="1.0.0"
 
-# Display usage information and available options
+# Show usage information.
 usage() {
     cat <<EOF
 netscan - Network Security Scanner
@@ -29,12 +31,12 @@ Examples:
 EOF
 }
 
-# Print the current version
+# Show the current script version.
 show_version() {
     echo "netscan version ${VERSION}"
 }
 
-# Scan the top 20 most common ports using nmap
+# Scan the top 20 ports on the target host.
 scan_ports() {
     local target="$1"
     echo "=== Port Scan (Top 20) ==="
@@ -44,7 +46,7 @@ scan_ports() {
     echo ""
 }
 
-# Check SSL/TLS certificate expiry using openssl
+# Check SSL/TLS certificate expiry.
 scan_ssl() {
     local target="$1"
     echo "=== SSL/TLS Certificate Check ==="
@@ -81,7 +83,7 @@ scan_ssl() {
     echo ""
 }
 
-# Inspect HTTP security headers using curl
+# Inspect common HTTP security headers.
 scan_headers() {
     local target="$1"
     echo "=== HTTP Security Headers ==="
@@ -109,7 +111,7 @@ scan_headers() {
     echo ""
 }
 
-# Look up DNS records using the host command
+# Look up key DNS record types.
 scan_dns() {
     local target="$1"
     echo "=== DNS Records ==="
@@ -117,24 +119,24 @@ scan_dns() {
     echo ""
 
     echo "-- A Records --"
-    # We pipe standard output through grep -v to filter out ;; warnings
-    host -t A "$target" 2>/dev/null | grep -v "^;;" || echo "No A records found"
+    host -t A "$target" 2>/dev/null || echo "No A records found"
     echo ""
 
     echo "-- MX Records --"
-    host -t MX "$target" 2>/dev/null | grep -v "^;;" || echo "No MX records found"
+    host -t MX "$target" 2>/dev/null || echo "No MX records found"
     echo ""
 
     echo "-- NS Records --"
-    host -t NS "$target" 2>/dev/null | grep -v "^;;" || echo "No NS records found"
+    host -t NS "$target" 2>/dev/null || echo "No NS records found"
     echo ""
 }
 
-# Entry point: parse arguments and dispatch to scan functions
+# Parse arguments and run the requested scan.
 main() {
     local target=""
     local scan_type="all"
 
+    # Read supported command-line options.
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --help)
@@ -169,6 +171,7 @@ main() {
         esac
     done
 
+    # Require a target whenever a scan is requested.
     if [[ -z "$target" && "$scan_type" != "" ]]; then
         if [[ "${scan_type}" == "all" || -n "${scan_type}" ]]; then
             echo "Error: --target is required for scanning" >&2
@@ -177,6 +180,7 @@ main() {
         fi
     fi
 
+    # Print the report header.
     echo "========================================"
     echo " Network Security Report"
     echo " Target: ${target}"
@@ -184,6 +188,7 @@ main() {
     echo "========================================"
     echo ""
 
+    # Run the selected scan type.
     case "${scan_type}" in
         ports)   scan_ports "$target" ;;
         ssl)     scan_ssl "$target" ;;

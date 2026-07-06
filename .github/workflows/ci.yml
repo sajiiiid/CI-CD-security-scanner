@@ -1,0 +1,25 @@
+name: CI Pipeline
+
+on: [push]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install bats-core
+        run: |
+          git clone https://github.com/bats-core/bats-core.git
+          cd bats-core
+          sudo ./install.sh /usr/local
+
+      - name: Lint with ShellCheck
+        run: shellcheck netscan.sh
+
+      - name: Run tests
+        run: bats test/
+
+      - name: Build Docker image
+        run: docker build -t netscan .

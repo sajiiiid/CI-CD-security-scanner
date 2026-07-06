@@ -1,4 +1,4 @@
-# Start from Alpine Linux - a minimal 5MB base image
+# Alpine Linux - a minimal 5MB base image
 FROM alpine:3.21
 
 # Install all the tools netscan.sh depends on
