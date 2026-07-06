@@ -43,7 +43,7 @@ scan_ports() {
     echo "=== Port Scan (Top 20) ==="
     echo "Target: ${target}"
     echo ""
-    nmap -Pn --top-ports 20 $target 2>/dev/null || echo "Error: nmap scan failed"
+    nmap -Pn --top-ports 20 "$target" 2>/dev/null || echo "Error: nmap scan failed"
     echo ""
 }
 
