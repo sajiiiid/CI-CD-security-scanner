@@ -4,6 +4,7 @@ set -euo pipefail
 
 # Script version.
 VERSION="1.0.0"
+echo $VERSION
 
 # Show usage information.
 usage() {
