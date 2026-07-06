@@ -3,8 +3,18 @@ name: CI Pipeline
 on: [push]
 
 jobs:
-  ci:
+  lint:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Lint with ShellCheck
+        run: shellcheck netscan.sh
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -15,11 +25,15 @@ jobs:
           cd bats-core
           sudo ./install.sh /usr/local
 
-      - name: Lint with ShellCheck
-        run: shellcheck netscan.sh
-
       - name: Run tests
         run: bats test/
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
       - name: Build Docker image
         run: docker build -t netscan .
